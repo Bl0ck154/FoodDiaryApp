@@ -93,6 +93,37 @@ def copy_sync_smali(root: Path, repo: Path) -> None:
         shutil.copy2(item, dst / item.name)
 
 
+def patch_event_helper(root: Path) -> None:
+    path = root / "smali/com/food/diary/db/EventHelper.smali"
+    text = read(path)
+
+    for name in ("insert", "update", "delete"):
+        sig = rf"\.method public static {name}\(Landroid/content/Context;Lcom/food/diary/models/Event;\)Z\n.*?\.end method"
+        match = re.search(sig, text, re.S)
+        if not match:
+            raise RuntimeError(f"EventHelper.{name}(Context, Event) not found")
+        method = match.group(0)
+        if "DiarySyncManager;->schedule" in method:
+            continue
+        method = method.replace("    .locals 1", "    .locals 2", 1)
+        method = method.replace("    new-instance v0, Lcom/food/diary/db/DatabaseHelper;",
+                                "    move-object v1, p0\n\n    new-instance v0, Lcom/food/diary/db/DatabaseHelper;", 1)
+        close_return = "    invoke-virtual {v0}, Lcom/food/diary/db/DatabaseHelper;->close()V\n\n    return p0"
+        replacement = (
+            "    invoke-virtual {v0}, Lcom/food/diary/db/DatabaseHelper;->close()V\n\n"
+            f"    if-eqz p0, :cond_sync_{name}\n\n"
+            "    invoke-static {v1}, Lcom/food/diary/sync/DiarySyncManager;->schedule(Landroid/content/Context;)V\n\n"
+            f"    :cond_sync_{name}\n"
+            "    return p0"
+        )
+        if close_return not in method:
+            raise RuntimeError(f"EventHelper.{name} successful return shape changed")
+        method = method.replace(close_return, replacement, 1)
+        text = text[:match.start()] + method + text[match.end():]
+
+    write(path, text)
+
+
 def patch_main_activity(root: Path) -> None:
     path = root / "smali/com/food/diary/MainActivity.smali"
     text = read(path)
@@ -209,6 +240,7 @@ def main() -> None:
     patch_resources(root)
     patch_export_authority(root)
     copy_sync_smali(root, repo)
+    patch_event_helper(root)
     patch_main_activity(root)
     patch_backup_restore(root)
     print(f"Patched {root} for {APP_ID}")
