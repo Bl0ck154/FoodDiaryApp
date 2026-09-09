@@ -1,0 +1,9 @@
+/.work/
+/dist/
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
+local.properties
+.DS_Store
