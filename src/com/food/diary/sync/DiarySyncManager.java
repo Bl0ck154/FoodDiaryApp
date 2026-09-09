@@ -5,6 +5,8 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -26,11 +29,13 @@ public final class DiarySyncManager {
 
     private static final String PREFS = "food_diary_sync";
     private static final String KEY_DOCUMENT_URI = "document_uri";
+    private static final String KEY_PROVIDER_NAME = "provider_name";
+    private static final String KEY_PROVIDER_PACKAGE = "provider_package";
+    private static final String KEY_PROVIDER_AUTHORITY = "provider_authority";
     private static final String KEY_LAST_SYNC_MS = "last_sync_ms";
     private static final String KEY_LAST_ERROR = "last_error";
     private static final long DEBOUNCE_MS = 450L;
 
-    // Exact resource IDs from Food Diary 5.0 (21).
     private static final int ARRAY_DRINK_TYPES = 0x7f030003;
     private static final int ARRAY_FOOD_TYPES = 0x7f030004;
     private static final int ARRAY_EVENT_TYPES = 0x7f030005;
@@ -70,6 +75,48 @@ public final class DiarySyncManager {
         return prefs(context).getString(KEY_LAST_ERROR, null);
     }
 
+    public static String getProviderName(Context context) {
+        String value = prefs(context).getString(KEY_PROVIDER_NAME, null);
+        if (value != null && value.length() > 0) return value;
+        Uri uri = getDocumentUri(context);
+        if (uri == null) return null;
+        ProviderSnapshot provider = resolveProvider(context, uri);
+        saveProvider(context, provider);
+        return provider.name;
+    }
+
+    public static String getProviderPackage(Context context) {
+        String value = prefs(context).getString(KEY_PROVIDER_PACKAGE, null);
+        if (value != null && value.length() > 0) return value;
+        Uri uri = getDocumentUri(context);
+        if (uri == null) return null;
+        ProviderSnapshot provider = resolveProvider(context, uri);
+        saveProvider(context, provider);
+        return provider.packageName;
+    }
+
+    public static String getProviderAuthority(Context context) {
+        String value = prefs(context).getString(KEY_PROVIDER_AUTHORITY, null);
+        if (value != null && value.length() > 0) return value;
+        Uri uri = getDocumentUri(context);
+        return uri == null ? null : uri.getAuthority();
+    }
+
+    public static boolean isGoogleDrive(Context context) {
+        String pkg = getProviderPackage(context);
+        String authority = getProviderAuthority(context);
+        String name = getProviderName(context);
+        if (pkg != null && (pkg.equals("com.google.android.apps.docs") || pkg.startsWith("com.google.android.apps.docs."))) {
+            return true;
+        }
+        String joined = ((authority == null ? "" : authority) + " " + (name == null ? "" : name)).toLowerCase(Locale.ROOT);
+        return joined.contains("google") && joined.contains("drive");
+    }
+
+    public static boolean isLocalTarget(Context context) {
+        return isConfigured(context) && !isGoogleDrive(context);
+    }
+
     public static void launchPicker(Activity activity) {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -92,15 +139,43 @@ public final class DiarySyncManager {
         try {
             activity.getContentResolver().takePersistableUriPermission(uri, takeFlags);
         } catch (SecurityException ignored) {
-            // Provider may not support explicit take; keep the returned URI anyway.
         }
 
+        ProviderSnapshot provider = resolveProvider(activity, uri);
         prefs(activity).edit()
                 .putString(KEY_DOCUMENT_URI, uri.toString())
+                .putString(KEY_PROVIDER_NAME, provider.name)
+                .putString(KEY_PROVIDER_PACKAGE, provider.packageName)
+                .putString(KEY_PROVIDER_AUTHORITY, provider.authority)
                 .remove(KEY_LAST_ERROR)
                 .apply();
         schedule(activity);
         return true;
+    }
+
+    private static ProviderSnapshot resolveProvider(Context context, Uri uri) {
+        String authority = uri == null || uri.getAuthority() == null ? "" : uri.getAuthority();
+        String packageName = "";
+        String name = "Storage provider";
+        try {
+            PackageManager pm = context.getPackageManager();
+            ProviderInfo info = pm.resolveContentProvider(authority, 0);
+            if (info != null) {
+                packageName = info.packageName == null ? "" : info.packageName;
+                CharSequence label = info.loadLabel(pm);
+                if (label != null && label.length() > 0) name = label.toString();
+            }
+        } catch (Exception ignored) {}
+        if (packageName.equals("com.google.android.apps.docs")) name = "Google Drive";
+        return new ProviderSnapshot(name, packageName, authority);
+    }
+
+    private static void saveProvider(Context context, ProviderSnapshot provider) {
+        prefs(context).edit()
+                .putString(KEY_PROVIDER_NAME, provider.name)
+                .putString(KEY_PROVIDER_PACKAGE, provider.packageName)
+                .putString(KEY_PROVIDER_AUTHORITY, provider.authority)
+                .apply();
     }
 
     public static synchronized void schedule(Context context) {
@@ -200,12 +275,8 @@ public final class DiarySyncManager {
     }
 
     private static String resolveSubType(Context context, int typeKey, int subTypeKey) {
-        if (typeKey == 0) {
-            return resolveLabel(context, ARRAY_FOOD_TYPES, subTypeKey, "");
-        }
-        if (typeKey == 1) {
-            return resolveLabel(context, ARRAY_DRINK_TYPES, subTypeKey, "");
-        }
+        if (typeKey == 0) return resolveLabel(context, ARRAY_FOOD_TYPES, subTypeKey, "");
+        if (typeKey == 1) return resolveLabel(context, ARRAY_DRINK_TYPES, subTypeKey, "");
         return "";
     }
 
@@ -226,6 +297,17 @@ public final class DiarySyncManager {
             case 4: return "Exercise";
             case 5: return "Other";
             default: return "Unknown";
+        }
+    }
+
+    private static final class ProviderSnapshot {
+        final String name;
+        final String packageName;
+        final String authority;
+        ProviderSnapshot(String name, String packageName, String authority) {
+            this.name = name == null ? "" : name;
+            this.packageName = packageName == null ? "" : packageName;
+            this.authority = authority == null ? "" : authority;
         }
     }
 }

@@ -21,7 +21,7 @@
 .method constructor <init>()V
     .registers 1
 
-    .line 39
+    .line 44
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -32,18 +32,18 @@
 .method public newThread(Ljava/lang/Runnable;)Ljava/lang/Thread;
     .registers 4
 
-    .line 42
+    .line 47
     new-instance v0, Ljava/lang/Thread;
 
     const-string v1, "FoodDiarySync"
 
     invoke-direct {v0, p1, v1}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;Ljava/lang/String;)V
 
-    .line 43
+    .line 48
     const/4 p1, 0x1
 
     invoke-virtual {v0, p1}, Ljava/lang/Thread;->setDaemon(Z)V
 
-    .line 44
+    .line 49
     return-object v0
 .end method

@@ -60,8 +60,8 @@ def patch_manifest(root: Path) -> None:
 def patch_version(root: Path) -> None:
     path = root / "apktool.yml"
     text = read(path)
-    text = re.sub(r"(?m)^  versionCode: .*?$", "  versionCode: 50002", text, count=1)
-    text = re.sub(r"(?m)^  versionName: .*?$", "  versionName: 5.0.2-bl0ck2", text, count=1)
+    text = re.sub(r"(?m)^  versionCode: .*?$", "  versionCode: 50003", text, count=1)
+    text = re.sub(r"(?m)^  versionName: .*?$", "  versionName: 5.0.3-bl0ck3", text, count=1)
     write(path, text)
 
 

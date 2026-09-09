@@ -3,12 +3,12 @@
 .source "ModernBackupActivity.java"
 
 # interfaces
-.implements Landroid/view/View$OnClickListener;
+.implements Ljava/lang/Runnable;
 
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lcom/food/diary/sync/ModernBackupActivity;->buildUi()V
+    value = Lcom/food/diary/sync/ModernBackupActivity;->manualSync(Lcom/food/diary/sync/ModernBackupActivity$ActionFragment;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -20,13 +20,22 @@
 # instance fields
 .field final synthetic this$0:Lcom/food/diary/sync/ModernBackupActivity;
 
+.field final synthetic val$fragment:Lcom/food/diary/sync/ModernBackupActivity$ActionFragment;
+
 
 # direct methods
-.method constructor <init>(Lcom/food/diary/sync/ModernBackupActivity;)V
-    .registers 2
+.method constructor <init>(Lcom/food/diary/sync/ModernBackupActivity;Lcom/food/diary/sync/ModernBackupActivity$ActionFragment;)V
+    .registers 3
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()V"
+        }
+    .end annotation
 
-    .line 111
+    .line 176
     iput-object p1, p0, Lcom/food/diary/sync/ModernBackupActivity$1;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
+
+    iput-object p2, p0, Lcom/food/diary/sync/ModernBackupActivity$1;->val$fragment:Lcom/food/diary/sync/ModernBackupActivity$ActionFragment;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -35,14 +44,25 @@
 
 
 # virtual methods
-.method public onClick(Landroid/view/View;)V
-    .registers 2
+.method public run()V
+    .registers 4
 
-    .line 112
-    iget-object p1, p0, Lcom/food/diary/sync/ModernBackupActivity$1;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
+    .line 178
+    iget-object v0, p0, Lcom/food/diary/sync/ModernBackupActivity$1;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
 
-    # invokes: Lcom/food/diary/sync/ModernBackupActivity;->launchImportCsv()V
-    invoke-static {p1}, Lcom/food/diary/sync/ModernBackupActivity;->access$000(Lcom/food/diary/sync/ModernBackupActivity;)V
+    invoke-static {v0}, Lcom/food/diary/sync/DiarySyncManager;->exportNow(Landroid/content/Context;)Z
 
+    move-result v0
+
+    .line 179
+    iget-object v1, p0, Lcom/food/diary/sync/ModernBackupActivity$1;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
+
+    new-instance v2, Lcom/food/diary/sync/ModernBackupActivity$1$1;
+
+    invoke-direct {v2, p0, v0}, Lcom/food/diary/sync/ModernBackupActivity$1$1;-><init>(Lcom/food/diary/sync/ModernBackupActivity$1;Z)V
+
+    invoke-virtual {v1, v2}, Lcom/food/diary/sync/ModernBackupActivity;->runOnUiThread(Ljava/lang/Runnable;)V
+
+    .line 189
     return-void
 .end method

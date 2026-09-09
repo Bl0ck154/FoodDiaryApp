@@ -30,7 +30,7 @@
         }
     .end annotation
 
-    .line 110
+    .line 185
     iput-object p1, p0, Lcom/food/diary/sync/DiarySyncManager$2;->val$app:Landroid/content/Context;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,11 +43,11 @@
 .method public run()V
     .registers 2
 
-    .line 113
+    .line 188
     iget-object v0, p0, Lcom/food/diary/sync/DiarySyncManager$2;->val$app:Landroid/content/Context;
 
     invoke-static {v0}, Lcom/food/diary/sync/DiarySyncManager;->exportNow(Landroid/content/Context;)Z
 
-    .line 114
+    .line 189
     return-void
 .end method

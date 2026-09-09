@@ -1,23 +1,29 @@
 package com.food.diary.sync;
 
-import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
+import com.google.android.material.tabs.TabLayout;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -35,181 +41,118 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class ModernBackupActivity extends Activity {
+/**
+ * Modern backup implementation presented inside the original Food Diary
+ * toolbar + tab layout. No broad storage permissions are used.
+ */
+public class ModernBackupActivity extends AppCompatActivity {
     private static final int REQ_IMPORT_CSV = 0xC501;
     private static final int REQ_EXPORT_CSV = 0xC502;
+
+    private static final int LAYOUT_BACKUP = 0x7f0c001c;
+    private static final int ID_TOOLBAR = 0x7f0901e0;
+    private static final int ID_PAGER = 0x7f09007a;
+    private static final int ID_TABS = 0x7f0901bd;
+    private static final int ICON_EXPORT = 0x7f08013a;
+    private static final int ICON_IMPORT = 0x7f08013b;
+    private static final int ICON_SYNC = 0x7f080139;
+
     private static final int ARRAY_CSV_HEADERS = 0x7f030000;
     private static final int ARRAY_DRINK_TYPES = 0x7f030003;
     private static final int ARRAY_FOOD_TYPES = 0x7f030004;
     private static final int ARRAY_EVENT_TYPES = 0x7f030005;
 
-    private TextView status;
-    private Button syncNow;
+    private ViewPager pager;
     private boolean importedAnything;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setTitle("Backup & Sync");
-        buildUi();
+        setContentView(LAYOUT_BACKUP);
+
+        Toolbar toolbar = (Toolbar) findViewById(ID_TOOLBAR);
+        setSupportActionBar(toolbar);
+        ActionBar bar = getSupportActionBar();
+        if (bar != null) {
+            bar.setDisplayHomeAsUpEnabled(true);
+            bar.setTitle("Backup & Sync");
+        }
+
+        pager = (ViewPager) findViewById(ID_PAGER);
+        pager.setAdapter(new SectionsPagerAdapter(getSupportFragmentManager()));
+
+        TabLayout tabs = (TabLayout) findViewById(ID_TABS);
+        tabs.setupWithViewPager(pager);
+        TabLayout.Tab export = tabs.getTabAt(0);
+        TabLayout.Tab imp = tabs.getTabAt(1);
+        TabLayout.Tab sync = tabs.getTabAt(2);
+        if (export != null) export.setIcon(ICON_EXPORT);
+        if (imp != null) imp.setIcon(ICON_IMPORT);
+        if (sync != null) sync.setIcon(ICON_SYNC);
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        refreshStatus();
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finishWithResult();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        finishWithResult();
+    }
+
+    private void finishWithResult() {
+        if (importedAnything) setResult(RESULT_OK);
+        finish();
     }
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private TextView text(String value, float sp) {
+    private TextView paragraph(String text) {
         TextView view = new TextView(this);
-        view.setText(value);
-        view.setTextSize(sp);
-        view.setPadding(0, dp(5), 0, dp(5));
+        view.setText(text);
+        view.setTextSize(14);
+        view.setPadding(0, dp(4), 0, dp(12));
         return view;
     }
 
-    private Button button(String value) {
+    private Button actionButton(String text) {
         Button button = new Button(this);
-        button.setText(value);
+        button.setText(text);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, dp(6), 0, dp(6));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(5), 0, dp(5));
         button.setLayoutParams(lp);
         return button;
     }
 
-    private void buildUi() {
-        ScrollView scroll = new ScrollView(this);
+    private LinearLayout pageRoot() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(24));
-        scroll.addView(root);
-
-        TextView title = text("Backup & Sync", 24);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        root.addView(title);
-
-        String intro = "This Bl0ck154 build keeps its own local database. ";
-        if (isPackageInstalled("com.food.diary")) {
-            intro += "The original Food Diary is installed, but Android does not allow another signed app to read its private database directly. Use the original app's CSV Share/Export once, then import that CSV here.";
-        } else {
-            intro += "To migrate an older Food Diary installation, import a CSV exported by it.";
-        }
-        TextView help = text(intro, 14);
-        help.setPadding(0, dp(4), 0, dp(14));
-        root.addView(help);
-
-        TextView migrateHeader = text("Move old history", 18);
-        migrateHeader.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        root.addView(migrateHeader);
-
-        Button importCsv = button("Import old Food Diary CSV");
-        importCsv.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { launchImportCsv(); }
-        });
-        root.addView(importCsv);
-
-        Button exportCsv = button("Export all records as CSV");
-        exportCsv.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { launchExportCsv(); }
-        });
-        root.addView(exportCsv);
-
-        TextView syncHeader = text("Google Drive sync", 18);
-        syncHeader.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        syncHeader.setPadding(0, dp(18), 0, dp(4));
-        root.addView(syncHeader);
-
-        status = text("", 14);
-        root.addView(status);
-
-        Button chooseSync = button("Choose / change sync file");
-        chooseSync.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { DiarySyncManager.launchPicker(ModernBackupActivity.this); }
-        });
-        root.addView(chooseSync);
-
-        syncNow = button("Sync now");
-        syncNow.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                if (!DiarySyncManager.isConfigured(ModernBackupActivity.this)) {
-                    DiarySyncManager.launchPicker(ModernBackupActivity.this);
-                    return;
-                }
-                syncNow.setEnabled(false);
-                new Thread(new Runnable() {
-                    @Override public void run() {
-                        final boolean ok = DiarySyncManager.exportNow(ModernBackupActivity.this);
-                        runOnUiThread(new Runnable() {
-                            @Override public void run() {
-                                syncNow.setEnabled(true);
-                                refreshStatus();
-                                Toast.makeText(ModernBackupActivity.this,
-                                        ok ? "Synced" : "Sync failed", Toast.LENGTH_LONG).show();
-                            }
-                        });
-                    }
-                }, "FoodDiaryManualSync").start();
-            }
-        });
-        root.addView(syncNow);
-
-        TextView note = text("The JSON sync file is updated automatically after record changes. The local Events.db remains the source of truth.", 13);
-        note.setPadding(0, dp(8), 0, dp(14));
-        root.addView(note);
-
-        Button back = button("Back");
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { finishWithResult(); }
-        });
-        root.addView(back);
-
-        setContentView(scroll);
-        refreshStatus();
+        root.setPadding(dp(16), dp(14), dp(16), dp(16));
+        root.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        return root;
     }
 
-    private boolean isPackageInstalled(String packageName) {
-        try {
-            getPackageManager().getPackageInfo(packageName, 0);
-            return true;
-        } catch (PackageManager.NameNotFoundException e) {
-            return false;
-        }
-    }
-
-    private void refreshStatus() {
-        if (status == null) return;
-        if (!DiarySyncManager.isConfigured(this)) {
-            status.setText("Not connected. Choose a JSON file in Google Drive once; future changes will update it automatically.");
-            if (syncNow != null) syncNow.setText("Choose sync file");
-            return;
-        }
-        long last = DiarySyncManager.getLastSyncMs(this);
-        String error = DiarySyncManager.getLastError(this);
-        StringBuilder message = new StringBuilder("Connected");
-        if (last > 0) {
-            message.append("\nLast sync: ").append(DateFormat.getDateTimeInstance().format(new Date(last)));
-        }
-        if (error != null && error.length() > 0) {
-            message.append("\nLast error: ").append(error);
-        }
-        status.setText(message.toString());
-        if (syncNow != null) syncNow.setText("Sync now");
-    }
-
-    private void launchImportCsv() {
+    void launchImportCsv() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/*");
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"text/csv", "text/comma-separated-values", "text/plain", "application/csv"});
+        intent.putExtra(Intent.EXTRA_MIME_TYPES,
+                new String[]{"text/csv", "text/comma-separated-values", "text/plain", "application/csv"});
         startActivityForResult(intent, REQ_IMPORT_CSV);
     }
 
-    private void launchExportCsv() {
+    void launchExportCsv() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/csv");
@@ -217,13 +160,55 @@ public class ModernBackupActivity extends Activity {
         startActivityForResult(intent, REQ_EXPORT_CSV);
     }
 
+    void launchDrivePicker() {
+        Toast.makeText(this,
+                "In the system picker open the left menu and choose Google Drive, then choose where FoodDiary.json should be created.",
+                Toast.LENGTH_LONG).show();
+        DiarySyncManager.launchPicker(this);
+    }
+
+    void manualSync(final ActionFragment fragment) {
+        if (!DiarySyncManager.isGoogleDrive(this)) {
+            launchDrivePicker();
+            return;
+        }
+        fragment.setSyncButtonEnabled(false);
+        new Thread(new Runnable() {
+            @Override public void run() {
+                final boolean ok = DiarySyncManager.exportNow(ModernBackupActivity.this);
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        fragment.setSyncButtonEnabled(true);
+                        fragment.renderSyncStatus();
+                        Toast.makeText(ModernBackupActivity.this,
+                                ok ? "Drive file updated. Google Drive handles the cloud upload."
+                                   : "Could not update the Drive file.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        }, "FoodDiaryManualSync").start();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (DiarySyncManager.handleActivityResult(this, requestCode, resultCode, data)) {
-            if (resultCode == RESULT_OK) Toast.makeText(this, "Sync file connected", Toast.LENGTH_SHORT).show();
-            refreshStatus();
+            if (resultCode == RESULT_OK) {
+                if (DiarySyncManager.isGoogleDrive(this)) {
+                    Toast.makeText(this,
+                            "Google Drive selected. Food Diary can now update this Drive document.",
+                            Toast.LENGTH_LONG).show();
+                } else if (DiarySyncManager.isConfigured(this)) {
+                    String provider = DiarySyncManager.getProviderName(this);
+                    Toast.makeText(this,
+                            "Local/non-Drive target selected (" + provider + "). This is a local backup, not Google Drive sync.",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+            refreshSyncFragment();
             return;
         }
+
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         final Uri uri = data.getData();
@@ -239,8 +224,14 @@ public class ModernBackupActivity extends Activity {
         }
     }
 
+    private void refreshSyncFragment() {
+        Fragment f = getSupportFragmentManager().findFragmentByTag("android:switcher:" + ID_PAGER + ":2");
+        if (f instanceof ActionFragment) ((ActionFragment) f).renderSyncStatus();
+    }
+
     private SQLiteDatabase openDb() {
-        return SQLiteDatabase.openDatabase(getDatabasePath("Events.db").getPath(), null, SQLiteDatabase.OPEN_READWRITE);
+        return SQLiteDatabase.openDatabase(
+                getDatabasePath("Events.db").getPath(), null, SQLiteDatabase.OPEN_READWRITE);
     }
 
     private static String key(String value) {
@@ -316,16 +307,22 @@ public class ModernBackupActivity extends Activity {
             db.setTransactionSuccessful();
             importedAnything = importedAnything || imported > 0;
             if (imported > 0) {
-                setResult(1);
+                setResult(RESULT_OK);
                 DiarySyncManager.schedule(this);
             }
-            final String message = "Import complete: " + imported + " added, " + skipped + " duplicates" + (bad > 0 ? ", " + bad + " skipped" : "");
+            final String message = "Import complete: " + imported + " added, " + skipped + " duplicates"
+                    + (bad > 0 ? ", " + bad + " skipped" : "");
             runOnUiThread(new Runnable() {
-                @Override public void run() { Toast.makeText(ModernBackupActivity.this, message, Toast.LENGTH_LONG).show(); }
+                @Override public void run() {
+                    Toast.makeText(ModernBackupActivity.this, message, Toast.LENGTH_LONG).show();
+                }
             });
         } catch (final Exception e) {
             runOnUiThread(new Runnable() {
-                @Override public void run() { Toast.makeText(ModernBackupActivity.this, "Import failed: " + e.getMessage(), Toast.LENGTH_LONG).show(); }
+                @Override public void run() {
+                    Toast.makeText(ModernBackupActivity.this,
+                            "Import failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             });
         } finally {
             if (db != null) {
@@ -352,7 +349,9 @@ public class ModernBackupActivity extends Activity {
             writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
             writeCsvRow(writer, headers);
             db = openDb();
-            cursor = db.rawQuery("SELECT ROWID,[Date],[Time],[TypeKey],[SubTypeKey],[Description] FROM [Event] ORDER BY [Date],[Time],ROWID", null);
+            cursor = db.rawQuery(
+                    "SELECT ROWID,[Date],[Time],[TypeKey],[SubTypeKey],[Description] FROM [Event] ORDER BY [Date],[Time],ROWID",
+                    null);
             while (cursor.moveToNext()) {
                 int type = cursor.getInt(3);
                 int sub = cursor.getInt(4);
@@ -368,11 +367,17 @@ public class ModernBackupActivity extends Activity {
             writer.flush();
             final int exported = count;
             runOnUiThread(new Runnable() {
-                @Override public void run() { Toast.makeText(ModernBackupActivity.this, "Exported " + exported + " records", Toast.LENGTH_LONG).show(); }
+                @Override public void run() {
+                    Toast.makeText(ModernBackupActivity.this,
+                            "Exported " + exported + " records", Toast.LENGTH_LONG).show();
+                }
             });
         } catch (final Exception e) {
             runOnUiThread(new Runnable() {
-                @Override public void run() { Toast.makeText(ModernBackupActivity.this, "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show(); }
+                @Override public void run() {
+                    Toast.makeText(ModernBackupActivity.this,
+                            "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             });
         } finally {
             if (cursor != null) cursor.close();
@@ -386,7 +391,8 @@ public class ModernBackupActivity extends Activity {
         for (int i = 0; i < values.length; i++) {
             if (i > 0) writer.write(',');
             String value = values[i] == null ? "" : values[i];
-            boolean quote = value.indexOf(',') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0;
+            boolean quote = value.indexOf(',') >= 0 || value.indexOf('"') >= 0
+                    || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0;
             if (quote) writer.write('"');
             for (int j = 0; j < value.length(); j++) {
                 char c = value.charAt(j);
@@ -397,22 +403,162 @@ public class ModernBackupActivity extends Activity {
         writer.write('\n');
     }
 
-    private void finishWithResult() {
-        if (importedAnything) setResult(1);
-        finish();
+    public static final class SectionsPagerAdapter extends FragmentPagerAdapter {
+        public SectionsPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override public int getCount() { return 3; }
+
+        @Override public Fragment getItem(int position) {
+            return ActionFragment.newInstance(position);
+        }
+
+        @Override public CharSequence getPageTitle(int position) {
+            if (position == 0) return "Export";
+            if (position == 1) return "Import";
+            return "Sync";
+        }
     }
 
-    @Override public void onBackPressed() { finishWithResult(); }
+    public static final class ActionFragment extends Fragment {
+        private static final String ARG_MODE = "mode";
+        private int mode;
+        private TextView syncStatus;
+        private Button syncNow;
+
+        static ActionFragment newInstance(int mode) {
+            ActionFragment fragment = new ActionFragment();
+            Bundle args = new Bundle();
+            args.putInt(ARG_MODE, mode);
+            fragment.setArguments(args);
+            return fragment;
+        }
+
+        private ModernBackupActivity host() {
+            return (ModernBackupActivity) getActivity();
+        }
+
+        @Override
+        public void onCreate(Bundle state) {
+            super.onCreate(state);
+            Bundle args = getArguments();
+            mode = args == null ? 0 : args.getInt(ARG_MODE, 0);
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
+            final ModernBackupActivity activity = host();
+            LinearLayout root = activity.pageRoot();
+
+            if (mode == 0) {
+                root.addView(activity.paragraph("Save all diary records to a CSV file."));
+                Button export = activity.actionButton("Export CSV");
+                export.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { activity.launchExportCsv(); }
+                });
+                root.addView(export);
+            } else if (mode == 1) {
+                root.addView(activity.paragraph(
+                        "Import a CSV exported by the original Food Diary. Existing matching records are skipped."));
+                Button imp = activity.actionButton("Import CSV");
+                imp.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { activity.launchImportCsv(); }
+                });
+                root.addView(imp);
+            } else {
+                syncStatus = activity.paragraph("");
+                root.addView(syncStatus);
+
+                Button connect = activity.actionButton("Connect Google Drive…");
+                connect.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { activity.launchDrivePicker(); }
+                });
+                root.addView(connect);
+
+                syncNow = activity.actionButton("Sync now");
+                syncNow.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { activity.manualSync(ActionFragment.this); }
+                });
+                root.addView(syncNow);
+
+                TextView note = activity.paragraph(
+                        "The Google account is handled by the Google Drive document provider. Food Diary never receives your Google password. A successful write means the Drive provider accepted the updated file; Google Drive handles the network upload." );
+                note.setTextSize(13);
+                root.addView(note);
+                renderSyncStatus();
+            }
+            return root;
+        }
+
+        @Override public void onResume() {
+            super.onResume();
+            if (mode == 2) renderSyncStatus();
+        }
+
+        void setSyncButtonEnabled(boolean enabled) {
+            if (syncNow != null) syncNow.setEnabled(enabled);
+        }
+
+        void renderSyncStatus() {
+            if (syncStatus == null || getActivity() == null) return;
+            ModernBackupActivity activity = host();
+            String error = DiarySyncManager.getLastError(activity);
+            long last = DiarySyncManager.getLastSyncMs(activity);
+
+            if (!DiarySyncManager.isConfigured(activity)) {
+                syncStatus.setText(
+                        "Google Drive: not connected\n\nTap Connect Google Drive, then choose Google Drive from the system picker's left menu.");
+                if (syncNow != null) syncNow.setEnabled(false);
+                return;
+            }
+
+            String provider = DiarySyncManager.getProviderName(activity);
+            if (DiarySyncManager.isGoogleDrive(activity)) {
+                StringBuilder text = new StringBuilder("Google Drive: connected");
+                text.append("\nProvider: ").append(provider == null ? "Google Drive" : provider);
+                if (last > 0) {
+                    text.append("\nLast write to Drive provider: ")
+                            .append(DateFormat.getDateTimeInstance().format(new Date(last)));
+                }
+                if (error != null && error.length() > 0) text.append("\nLast error: ").append(error);
+                syncStatus.setText(text.toString());
+                if (syncNow != null) syncNow.setEnabled(true);
+            } else {
+                StringBuilder text = new StringBuilder("Cloud sync: OFF");
+                text.append("\nCurrent target: ").append(provider == null ? "Local storage" : provider);
+                text.append("\nThis is only a local/non-Drive backup.");
+                if (last > 0) {
+                    text.append("\nLast local write: ")
+                            .append(DateFormat.getDateTimeInstance().format(new Date(last)));
+                }
+                text.append("\n\nTap Connect Google Drive and choose Google Drive in the picker.");
+                if (error != null && error.length() > 0) text.append("\nLast error: ").append(error);
+                syncStatus.setText(text.toString());
+                if (syncNow != null) syncNow.setEnabled(false);
+            }
+        }
+    }
 
     private static final class CsvReader {
         private final BufferedReader reader;
         private int pushed = -2;
-        CsvReader(InputStream in) { reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)); }
+
+        CsvReader(InputStream in) {
+            reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+
         private int read() throws IOException {
-            if (pushed != -2) { int c = pushed; pushed = -2; return c; }
+            if (pushed != -2) {
+                int c = pushed;
+                pushed = -2;
+                return c;
+            }
             return reader.read();
         }
+
         private void unread(int c) { pushed = c; }
+
         List<String> next() throws IOException {
             ArrayList<String> row = new ArrayList<String>();
             StringBuilder field = new StringBuilder();
@@ -431,14 +577,29 @@ public class ModernBackupActivity extends Activity {
                     if (c == '"') {
                         int next = read();
                         if (next == '"') field.append('"');
-                        else { quoted = false; if (next != -1) unread(next); }
-                    } else field.append(c);
+                        else {
+                            quoted = false;
+                            if (next != -1) unread(next);
+                        }
+                    } else {
+                        field.append(c);
+                    }
                 } else {
                     if (c == '"' && field.length() == 0) quoted = true;
-                    else if (c == ',') { row.add(field.toString()); field.setLength(0); }
-                    else if (c == '\n') { row.add(field.toString()); return row; }
-                    else if (c == '\r') { int next = read(); if (next != '\n' && next != -1) unread(next); row.add(field.toString()); return row; }
-                    else field.append(c);
+                    else if (c == ',') {
+                        row.add(field.toString());
+                        field.setLength(0);
+                    } else if (c == '\n') {
+                        row.add(field.toString());
+                        return row;
+                    } else if (c == '\r') {
+                        int next = read();
+                        if (next != '\n' && next != -1) unread(next);
+                        row.add(field.toString());
+                        return row;
+                    } else {
+                        field.append(c);
+                    }
                 }
             }
         }

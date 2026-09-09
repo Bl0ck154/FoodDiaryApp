@@ -12,7 +12,7 @@ APKTOOL_JAR="${APKTOOL_JAR:?Set APKTOOL_JAR to Apktool 3.x jar}"
 WORK="$ROOT/.work"
 DIST="$ROOT/dist"
 DECODED="$WORK/decoded"
-UNSIGNED="$DIST/FoodDiary-Bl0ck154-v5.0.2-bl0ck2-unsigned.apk"
+UNSIGNED="$DIST/FoodDiary-Bl0ck154-v5.0.3-bl0ck3-unsigned.apk"
 
 rm -rf "$WORK"
 mkdir -p "$WORK" "$DIST"

@@ -14,12 +14,13 @@ A minimal personal diary Android app based on **Food Diary 5.0 (21)** / the open
 - obsolete original Google Backup API key removed
 - legacy **Rate us** / **Invite friends** UI removed
 - automatic Play Store rating prompt disabled
-- modern **Backup & Sync** screen replaces the legacy permission-based backup UI
-  - **Import old Food Diary CSV** for one-time history migration
-  - **Export all records as CSV** through Android's system file picker
-  - choose/change a Google Drive `FoodDiary.json` sync file
-  - **Sync now** button plus last-sync/error status
-  - the selected JSON is also refreshed automatically after record changes
+- original-style **Backup & Sync** screen keeps Food Diary's toolbar + tabs
+  - **Export** tab uses Android's system file picker
+  - **Import** tab migrates an old Food Diary CSV with duplicate protection
+  - **Sync** tab explicitly distinguishes Google Drive from local storage
+  - Google Drive is considered connected only when the selected DocumentsProvider is actually Google Drive
+  - local/non-Drive targets are labeled **local backup only**, never cloud sync
+  - the selected JSON target is refreshed automatically after record changes
 - local SQLite `Events.db` remains the source of truth
 
 ## Migrating from the original app
@@ -45,15 +46,15 @@ The sync file is a readable JSON snapshot containing:
 - `subTypeKey` / `subType`
 - `description`
 
-No account, OAuth implementation, custom backend, or background network service is added to Food Diary. The selected document provider handles cloud storage.
+No Google OAuth token or password is handled by Food Diary. Android's Storage Access Framework delegates the target to a DocumentsProvider. If the user chooses Google Drive in the system picker, the Google Drive app/provider and its signed-in account own the cloud access. If the user chooses Downloads, Files, or another local provider, the app reports that target as local backup only.
 
 ## Versioning
 
 Current maintained build:
 
 - application ID: `com.bl0ck154.fooddiary`
-- version code: `50002`
-- version name: `5.0.2-bl0ck2`
+- version code: `50003`
+- version name: `5.0.3-bl0ck3`
 
 Future releases should increase `versionCode` so Android accepts them as in-place updates.
 

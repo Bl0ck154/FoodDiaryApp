@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lcom/food/diary/sync/ModernBackupActivity;->onActivityResult(IILandroid/content/Intent;)V
+    value = Lcom/food/diary/sync/ModernBackupActivity;->exportCsv(Landroid/net/Uri;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -20,11 +20,11 @@
 # instance fields
 .field final synthetic this$0:Lcom/food/diary/sync/ModernBackupActivity;
 
-.field final synthetic val$uri:Landroid/net/Uri;
+.field final synthetic val$e:Ljava/lang/Exception;
 
 
 # direct methods
-.method constructor <init>(Lcom/food/diary/sync/ModernBackupActivity;Landroid/net/Uri;)V
+.method constructor <init>(Lcom/food/diary/sync/ModernBackupActivity;Ljava/lang/Exception;)V
     .registers 3
     .annotation system Ldalvik/annotation/Signature;
         value = {
@@ -32,10 +32,10 @@
         }
     .end annotation
 
-    .line 236
+    .line 376
     iput-object p1, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
 
-    iput-object p2, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->val$uri:Landroid/net/Uri;
+    iput-object p2, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->val$e:Ljava/lang/Exception;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -45,15 +45,46 @@
 
 # virtual methods
 .method public run()V
-    .registers 3
+    .registers 4
 
-    .line 237
+    .line 378
     iget-object v0, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->this$0:Lcom/food/diary/sync/ModernBackupActivity;
 
-    iget-object v1, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->val$uri:Landroid/net/Uri;
+    new-instance v1, Ljava/lang/StringBuilder;
 
-    # invokes: Lcom/food/diary/sync/ModernBackupActivity;->exportCsv(Landroid/net/Uri;)V
-    invoke-static {v0, v1}, Lcom/food/diary/sync/ModernBackupActivity;->access$600(Lcom/food/diary/sync/ModernBackupActivity;Landroid/net/Uri;)V
+    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
 
+    const-string v2, "Export failed: "
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    iget-object v2, p0, Lcom/food/diary/sync/ModernBackupActivity$7;->val$e:Ljava/lang/Exception;
+
+    .line 379
+    invoke-virtual {v2}, Ljava/lang/Exception;->getMessage()Ljava/lang/String;
+
+    move-result-object v2
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+
+    move-result-object v1
+
+    .line 378
+    const/4 v2, 0x1
+
+    invoke-static {v0, v1, v2}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+
+    move-result-object v0
+
+    .line 379
+    invoke-virtual {v0}, Landroid/widget/Toast;->show()V
+
+    .line 380
     return-void
 .end method
