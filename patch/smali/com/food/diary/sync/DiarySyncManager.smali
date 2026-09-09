@@ -64,7 +64,7 @@
 .end method
 
 .method private static buildSnapshot(Landroid/content/Context;)[B
-    .registers 14
+    .registers 20
     .annotation system Ldalvik/annotation/Throws;
         value = {
             Ljava/io/IOException;
@@ -72,23 +72,25 @@
     .end annotation
 
     .line 149
-    new-instance v0, Ljava/io/ByteArrayOutputStream;
+    move-object/from16 v0, p0
 
-    const/16 v1, 0x4000
+    new-instance v1, Ljava/io/ByteArrayOutputStream;
 
-    invoke-direct {v0, v1}, Ljava/io/ByteArrayOutputStream;-><init>(I)V
+    const/16 v2, 0x4000
+
+    invoke-direct {v1, v2}, Ljava/io/ByteArrayOutputStream;-><init>(I)V
 
     .line 150
-    new-instance v1, Ljava/io/OutputStreamWriter;
+    new-instance v2, Ljava/io/OutputStreamWriter;
 
-    sget-object v2, Ljava/nio/charset/StandardCharsets;->UTF_8:Ljava/nio/charset/Charset;
+    sget-object v3, Ljava/nio/charset/StandardCharsets;->UTF_8:Ljava/nio/charset/Charset;
 
-    invoke-direct {v1, v0, v2}, Ljava/io/OutputStreamWriter;-><init>(Ljava/io/OutputStream;Ljava/nio/charset/Charset;)V
+    invoke-direct {v2, v1, v3}, Ljava/io/OutputStreamWriter;-><init>(Ljava/io/OutputStream;Ljava/nio/charset/Charset;)V
 
     .line 151
-    new-instance v2, Landroid/util/JsonWriter;
+    new-instance v3, Landroid/util/JsonWriter;
 
-    invoke-direct {v2, v1}, Landroid/util/JsonWriter;-><init>(Ljava/io/Writer;)V
+    invoke-direct {v3, v2}, Landroid/util/JsonWriter;-><init>(Ljava/io/Writer;)V
 
     .line 152
     nop
@@ -97,344 +99,394 @@
     nop
 
     .line 156
-    const/4 v1, 0x0
+    const/4 v2, 0x0
 
-    :try_start_16
-    const-string v3, "  "
+    :try_start_18
+    const-string v4, "  "
 
-    invoke-virtual {v2, v3}, Landroid/util/JsonWriter;->setIndent(Ljava/lang/String;)V
+    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->setIndent(Ljava/lang/String;)V
 
     .line 157
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->beginObject()Landroid/util/JsonWriter;
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->beginObject()Landroid/util/JsonWriter;
 
     .line 158
-    const-string v3, "app"
+    const-string v4, "app"
 
-    invoke-virtual {v2, v3}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
-    move-result-object v3
+    move-result-object v4
 
-    const-string v4, "Food Diary"
+    const-string v5, "Food Diary"
 
-    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v4, v5}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 159
-    const-string v3, "schemaVersion"
+    const-string v4, "schemaVersion"
 
-    invoke-virtual {v2, v3}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
-    move-result-object v3
+    move-result-object v4
 
-    const-wide/16 v4, 0x1
+    const-wide/16 v5, 0x1
 
-    invoke-virtual {v3, v4, v5}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
+    invoke-virtual {v4, v5, v6}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
 
     .line 160
-    const-string v3, "updatedAtEpochMs"
+    const-string v4, "updatedAtEpochMs"
 
-    invoke-virtual {v2, v3}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
-    move-result-object v3
+    move-result-object v4
 
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
 
-    move-result-wide v4
+    move-result-wide v5
 
-    invoke-virtual {v3, v4, v5}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
+    invoke-virtual {v4, v5, v6}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
 
     .line 161
-    const-string v3, "events"
+    const-string v4, "events"
 
-    invoke-virtual {v2, v3}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v4}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
-    move-result-object v3
+    move-result-object v4
 
-    invoke-virtual {v3}, Landroid/util/JsonWriter;->beginArray()Landroid/util/JsonWriter;
+    invoke-virtual {v4}, Landroid/util/JsonWriter;->beginArray()Landroid/util/JsonWriter;
 
     .line 163
-    const-string v3, "Events.db"
+    const-string v4, "Events.db"
 
-    invoke-virtual {p0, v3}, Landroid/content/Context;->getDatabasePath(Ljava/lang/String;)Ljava/io/File;
+    invoke-virtual {v0, v4}, Landroid/content/Context;->getDatabasePath(Ljava/lang/String;)Ljava/io/File;
 
-    move-result-object v3
+    move-result-object v4
 
-    invoke-virtual {v3}, Ljava/io/File;->getPath()Ljava/lang/String;
+    invoke-virtual {v4}, Ljava/io/File;->getPath()Ljava/lang/String;
 
-    move-result-object v3
+    move-result-object v4
 
     .line 164
-    const/4 v4, 0x1
+    const/4 v5, 0x1
 
-    invoke-static {v3, v1, v4}, Landroid/database/sqlite/SQLiteDatabase;->openDatabase(Ljava/lang/String;Landroid/database/sqlite/SQLiteDatabase$CursorFactory;I)Landroid/database/sqlite/SQLiteDatabase;
+    invoke-static {v4, v2, v5}, Landroid/database/sqlite/SQLiteDatabase;->openDatabase(Ljava/lang/String;Landroid/database/sqlite/SQLiteDatabase$CursorFactory;I)Landroid/database/sqlite/SQLiteDatabase;
 
-    move-result-object v3
-    :try_end_59
-    .catchall {:try_start_16 .. :try_end_59} :catchall_120
+    move-result-object v4
+    :try_end_5b
+    .catchall {:try_start_18 .. :try_end_5b} :catchall_143
 
     .line 165
-    :try_start_59
-    const-string v6, "Event"
+    :try_start_5b
+    const-string v7, "Event"
 
-    const-string v7, "ROWID"
+    const/4 v6, 0x6
 
-    const-string v8, "Date"
+    new-array v8, v6, [Ljava/lang/String;
 
-    const-string v9, "Time"
+    const-string v6, "ROWID"
 
-    const-string v10, "TypeKey"
+    const/4 v14, 0x0
 
-    const-string v11, "SubTypeKey"
+    aput-object v6, v8, v14
 
-    const-string v12, "Description"
+    const-string v6, "Date"
 
-    filled-new-array/range {v7 .. v12}, [Ljava/lang/String;
+    aput-object v6, v8, v5
 
-    move-result-object v7
+    const-string v6, "Time"
 
-    const-string v12, "Date ASC, Time ASC, ROWID ASC"
+    const/4 v15, 0x2
 
-    const/4 v8, 0x0
+    aput-object v6, v8, v15
+
+    const-string v6, "TypeKey"
+
+    const/4 v13, 0x3
+
+    aput-object v6, v8, v13
+
+    const-string v6, "SubTypeKey"
+
+    const/4 v12, 0x4
+
+    aput-object v6, v8, v12
+
+    const-string v6, "Description"
+
+    const/4 v11, 0x5
+
+    aput-object v6, v8, v11
+
+    const-string v16, "Date ASC, Time ASC, ROWID ASC"
 
     const/4 v9, 0x0
 
     const/4 v10, 0x0
 
-    const/4 v11, 0x0
+    const/16 v17, 0x0
 
-    move-object v5, v3
+    const/16 v18, 0x0
 
-    invoke-virtual/range {v5 .. v12}, Landroid/database/sqlite/SQLiteDatabase;->query(Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+    move-object v6, v4
 
-    move-result-object v1
+    const/4 v2, 0x5
+
+    move-object/from16 v11, v17
+
+    const/4 v2, 0x4
+
+    move-object/from16 v12, v18
+
+    const/4 v2, 0x3
+
+    move-object/from16 v13, v16
+
+    invoke-virtual/range {v6 .. v13}, Landroid/database/sqlite/SQLiteDatabase;->query(Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+
+    move-result-object v6
+    :try_end_93
+    .catchall {:try_start_5b .. :try_end_93} :catchall_140
 
     .line 171
-    :goto_76
-    invoke-interface {v1}, Landroid/database/Cursor;->moveToNext()Z
+    :goto_93
+    :try_start_93
+    invoke-interface {v6}, Landroid/database/Cursor;->moveToNext()Z
 
-    move-result v5
+    move-result v7
 
-    if-eqz v5, :cond_103
+    if-eqz v7, :cond_122
 
     .line 172
-    const/4 v5, 0x0
+    invoke-interface {v6, v14}, Landroid/database/Cursor;->getLong(I)J
 
-    invoke-interface {v1, v5}, Landroid/database/Cursor;->getLong(I)J
-
-    move-result-wide v5
+    move-result-wide v7
 
     .line 173
-    invoke-interface {v1, v4}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
+    invoke-interface {v6, v5}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
 
-    move-result-object v7
+    move-result-object v9
 
     .line 174
-    const/4 v8, 0x2
+    invoke-interface {v6, v15}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
 
-    invoke-interface {v1, v8}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
-
-    move-result-object v8
+    move-result-object v10
 
     .line 175
-    const/4 v9, 0x3
+    invoke-interface {v6, v2}, Landroid/database/Cursor;->getInt(I)I
 
-    invoke-interface {v1, v9}, Landroid/database/Cursor;->getInt(I)I
-
-    move-result v9
+    move-result v11
 
     .line 176
-    const/4 v10, 0x4
+    const/4 v12, 0x4
 
-    invoke-interface {v1, v10}, Landroid/database/Cursor;->getInt(I)I
+    invoke-interface {v6, v12}, Landroid/database/Cursor;->getInt(I)I
 
-    move-result v10
+    move-result v13
 
     .line 177
-    const/4 v11, 0x5
+    const/4 v2, 0x5
 
-    invoke-interface {v1, v11}, Landroid/database/Cursor;->isNull(I)Z
+    invoke-interface {v6, v2}, Landroid/database/Cursor;->isNull(I)Z
 
-    move-result v12
+    move-result v18
 
-    if-eqz v12, :cond_9e
+    if-eqz v18, :cond_b8
 
-    const-string v11, ""
+    const-string v2, ""
 
-    goto :goto_a2
+    goto :goto_bf
 
-    :cond_9e
-    invoke-interface {v1, v11}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
+    :cond_b8
+    const/4 v2, 0x5
 
-    move-result-object v11
+    invoke-interface {v6, v2}, Landroid/database/Cursor;->getString(I)Ljava/lang/String;
+
+    move-result-object v17
+
+    move-object/from16 v2, v17
 
     .line 179
-    :goto_a2
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->beginObject()Landroid/util/JsonWriter;
+    :goto_bf
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->beginObject()Landroid/util/JsonWriter;
 
     .line 180
-    const-string v12, "id"
+    const-string v5, "id"
 
-    invoke-virtual {v2, v12}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
-    move-result-object v12
+    move-result-object v5
 
-    invoke-virtual {v12, v5, v6}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v7, v8}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
 
     .line 181
     const-string v5, "date"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    invoke-virtual {v5, v7}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v9}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 182
     const-string v5, "time"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    invoke-virtual {v5, v8}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v10}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 183
     const-string v5, "typeKey"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    int-to-long v6, v9
+    int-to-long v7, v11
 
-    invoke-virtual {v5, v6, v7}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v7, v8}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
 
     .line 184
     const-string v5, "subTypeKey"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    int-to-long v6, v10
+    int-to-long v7, v13
 
-    invoke-virtual {v5, v6, v7}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v7, v8}, Landroid/util/JsonWriter;->value(J)Landroid/util/JsonWriter;
 
     .line 185
     const-string v5, "type"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    invoke-static {v9}, Lcom/food/diary/sync/DiarySyncManager;->fallbackType(I)Ljava/lang/String;
+    invoke-static {v11}, Lcom/food/diary/sync/DiarySyncManager;->fallbackType(I)Ljava/lang/String;
 
-    move-result-object v6
+    move-result-object v7
 
-    const v7, 0x7f030005
+    const v8, 0x7f030005
 
-    invoke-static {p0, v7, v9, v6}, Lcom/food/diary/sync/DiarySyncManager;->resolveLabel(Landroid/content/Context;IILjava/lang/String;)Ljava/lang/String;
+    invoke-static {v0, v8, v11, v7}, Lcom/food/diary/sync/DiarySyncManager;->resolveLabel(Landroid/content/Context;IILjava/lang/String;)Ljava/lang/String;
 
-    move-result-object v6
+    move-result-object v7
 
-    invoke-virtual {v5, v6}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v7}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 186
     const-string v5, "subType"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    invoke-static {p0, v9, v10}, Lcom/food/diary/sync/DiarySyncManager;->resolveSubType(Landroid/content/Context;II)Ljava/lang/String;
+    invoke-static {v0, v11, v13}, Lcom/food/diary/sync/DiarySyncManager;->resolveSubType(Landroid/content/Context;II)Ljava/lang/String;
 
-    move-result-object v6
+    move-result-object v7
 
-    invoke-virtual {v5, v6}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v7}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 187
     const-string v5, "description"
 
-    invoke-virtual {v2, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v3, v5}, Landroid/util/JsonWriter;->name(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     move-result-object v5
 
-    invoke-virtual {v5, v11}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
+    invoke-virtual {v5, v2}, Landroid/util/JsonWriter;->value(Ljava/lang/String;)Landroid/util/JsonWriter;
 
     .line 188
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->endObject()Landroid/util/JsonWriter;
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->endObject()Landroid/util/JsonWriter;
 
     .line 189
-    goto/16 :goto_76
+    const/4 v2, 0x3
+
+    const/4 v5, 0x1
+
+    goto/16 :goto_93
 
     .line 191
-    :cond_103
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->endArray()Landroid/util/JsonWriter;
+    :cond_122
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->endArray()Landroid/util/JsonWriter;
 
     .line 192
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->endObject()Landroid/util/JsonWriter;
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->endObject()Landroid/util/JsonWriter;
 
     .line 193
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->flush()V
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->flush()V
 
     .line 194
-    invoke-virtual {v0}, Ljava/io/ByteArrayOutputStream;->toByteArray()[B
+    invoke-virtual {v1}, Ljava/io/ByteArrayOutputStream;->toByteArray()[B
 
-    move-result-object p0
-    :try_end_110
-    .catchall {:try_start_59 .. :try_end_110} :catchall_11e
+    move-result-object v0
+    :try_end_12f
+    .catchall {:try_start_93 .. :try_end_12f} :catchall_13d
 
     .line 196
-    if-eqz v1, :cond_115
+    if-eqz v6, :cond_134
 
-    invoke-interface {v1}, Landroid/database/Cursor;->close()V
+    invoke-interface {v6}, Landroid/database/Cursor;->close()V
 
     .line 197
-    :cond_115
-    if-eqz v3, :cond_11a
+    :cond_134
+    if-eqz v4, :cond_139
 
-    invoke-virtual {v3}, Landroid/database/sqlite/SQLiteDatabase;->close()V
+    invoke-virtual {v4}, Landroid/database/sqlite/SQLiteDatabase;->close()V
 
     .line 198
-    :cond_11a
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->close()V
+    :cond_139
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->close()V
 
     .line 194
-    return-object p0
+    return-object v0
 
     .line 196
-    :catchall_11e
-    move-exception p0
+    :catchall_13d
+    move-exception v0
 
-    goto :goto_122
+    move-object v2, v6
 
-    :catchall_120
-    move-exception p0
+    goto :goto_146
 
-    move-object v3, v1
+    :catchall_140
+    move-exception v0
 
-    :goto_122
-    if-eqz v1, :cond_127
+    const/4 v2, 0x0
 
-    invoke-interface {v1}, Landroid/database/Cursor;->close()V
+    goto :goto_146
+
+    :catchall_143
+    move-exception v0
+
+    const/4 v2, 0x0
+
+    const/4 v4, 0x0
+
+    :goto_146
+    if-eqz v2, :cond_14b
+
+    invoke-interface {v2}, Landroid/database/Cursor;->close()V
 
     .line 197
-    :cond_127
-    if-eqz v3, :cond_12c
+    :cond_14b
+    if-eqz v4, :cond_150
 
-    invoke-virtual {v3}, Landroid/database/sqlite/SQLiteDatabase;->close()V
+    invoke-virtual {v4}, Landroid/database/sqlite/SQLiteDatabase;->close()V
 
     .line 198
-    :cond_12c
-    invoke-virtual {v2}, Landroid/util/JsonWriter;->close()V
+    :cond_150
+    invoke-virtual {v3}, Landroid/util/JsonWriter;->close()V
 
     .line 199
-    goto :goto_131
+    goto :goto_155
 
-    :goto_130
-    throw p0
+    :goto_154
+    throw v0
 
-    :goto_131
-    goto :goto_130
+    :goto_155
+    goto :goto_154
 .end method
 
 .method public static exportNow(Landroid/content/Context;)Z

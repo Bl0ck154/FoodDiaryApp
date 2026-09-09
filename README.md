@@ -10,15 +10,29 @@ A minimal personal diary Android app based on **Food Diary 5.0 (21)** / the open
 - Visible app name stays **Food Diary**
 - Maintainer metadata: **Bl0ck154**
 - Google Mobile Ads metadata removed
-- `INTERNET` permission removed
+- `INTERNET`, `READ_EXTERNAL_STORAGE`, and `WRITE_EXTERNAL_STORAGE` permissions removed
 - obsolete original Google Backup API key removed
 - legacy **Rate us** / **Invite friends** UI removed
 - automatic Play Store rating prompt disabled
-- optional JSON sync through Android's system document picker
-  - choose `Backup / Restore -> Sync file…`
-  - select Google Drive (or any Storage Access Framework provider)
-  - the app keeps updating the selected `FoodDiary.json`
+- modern **Backup & Sync** screen replaces the legacy permission-based backup UI
+  - **Import old Food Diary CSV** for one-time history migration
+  - **Export all records as CSV** through Android's system file picker
+  - choose/change a Google Drive `FoodDiary.json` sync file
+  - **Sync now** button plus last-sync/error status
+  - the selected JSON is also refreshed automatically after record changes
 - local SQLite `Events.db` remains the source of truth
+
+## Migrating from the original app
+
+Android isolates `com.food.diary` and `com.bl0ck154.fooddiary` because they are different application identities and are signed with different keys. The maintained build therefore cannot silently read the original app's private `Events.db`.
+
+One-time migration:
+
+1. In the original Food Diary, export/share the history as CSV.
+2. Open **Backup & Sync** in this build.
+3. Tap **Import old Food Diary CSV** and select that file.
+
+The importer de-duplicates matching events and does not require broad storage permissions.
 
 ## Sync format
 
@@ -38,8 +52,8 @@ No account, OAuth implementation, custom backend, or background network service 
 Current maintained build:
 
 - application ID: `com.bl0ck154.fooddiary`
-- version code: `50001`
-- version name: `5.0.1-bl0ck1`
+- version code: `50002`
+- version name: `5.0.2-bl0ck2`
 
 Future releases should increase `versionCode` so Android accepts them as in-place updates.
 

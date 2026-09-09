@@ -36,9 +36,9 @@ def patch_manifest(root: Path) -> None:
     text = text.replace(f"android:authorities=\"{OLD_ID}.acra\"", f"android:authorities=\"{APP_ID}.acra\"")
     text = text.replace(f"android:authorities=\"{OLD_ID}.androidx-startup\"", f"android:authorities=\"{APP_ID}.androidx-startup\"")
 
-    # No network transport is used by the maintained build. Keep ACCESS_NETWORK_STATE
-    # because legacy code still queries connectivity, but remove INTERNET itself.
-    text = re.sub(r"\s*<uses-permission android:name=\"android.permission.INTERNET\"/>\n", "\n", text, count=1)
+    # Modern maintained flows use Storage Access Framework and need no broad storage/network permission.
+    for permission in ("android.permission.INTERNET", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"):
+        text = re.sub(rf"\s*<uses-permission android:name=\"{re.escape(permission)}\"/>\n", "\n", text, count=1)
     text = re.sub(r"\s*<meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\"[^\n]*/>\n", "\n", text, count=1)
     text = re.sub(r"\s*<meta-data android:name=\"com.google.android.backup.api_key\"[^\n]*/>\n", "\n", text, count=1)
 
@@ -50,14 +50,18 @@ def patch_manifest(root: Path) -> None:
     maintain = "\n        <meta-data android:name=\"app.maintainer\" android:value=\"Bl0ck154\"/>"
     if "app.maintainer" not in text:
         text = text[: close + 1] + maintain + text[close + 1 :]
+
+    activity = '        <activity android:exported="false" android:name="com.food.diary.sync.ModernBackupActivity" android:screenOrientation="portrait" android:theme="@style/AppTheme.NoActionBar"/>\n'
+    if "com.food.diary.sync.ModernBackupActivity" not in text:
+        text = text.replace("    </application>", activity + "    </application>", 1)
     write(path, text)
 
 
 def patch_version(root: Path) -> None:
     path = root / "apktool.yml"
     text = read(path)
-    text = re.sub(r"(?m)^  versionCode: .*?$", "  versionCode: 50001", text, count=1)
-    text = re.sub(r"(?m)^  versionName: .*?$", "  versionName: 5.0.1-bl0ck1", text, count=1)
+    text = re.sub(r"(?m)^  versionCode: .*?$", "  versionCode: 50002", text, count=1)
+    text = re.sub(r"(?m)^  versionName: .*?$", "  versionName: 5.0.2-bl0ck2", text, count=1)
     write(path, text)
 
 
@@ -69,6 +73,13 @@ def patch_resources(root: Path) -> None:
     text = re.sub(r"<string name=\"about_github\"\s*/>",
                   "<string name=\"about_github\">https://github.com/Bl0ck154/FoodDiaryApp</string>", text, count=1)
     write(strings, text)
+
+    # Make the maintained functionality discoverable in every locale.
+    for localized in (root / "res").glob("values*/strings.xml"):
+        localized_text = read(localized)
+        localized_text = re.sub(r'<string name="nav_backup_restore">.*?</string>',
+                                '<string name="nav_backup_restore">Backup &amp; Sync</string>', localized_text, count=1)
+        write(localized, localized_text)
 
     drawer = root / "res/menu/activity_main_drawer.xml"
     if drawer.exists():
@@ -134,6 +145,9 @@ def patch_main_activity(root: Path) -> None:
     repl = ".method private checkAppRateStatus()V\n    .locals 0\n\n    return-void\n.end method"
     if pat.search(text):
         text = pat.sub(repl, text, count=1)
+
+    text = text.replace("const-class v0, Lcom/food/diary/BackupRestoreActivity;",
+                        "const-class v0, Lcom/food/diary/sync/ModernBackupActivity;", 1)
 
     if ".method protected onStart()V" not in text:
         hook = """
